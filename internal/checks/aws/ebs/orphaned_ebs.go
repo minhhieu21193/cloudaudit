@@ -36,7 +36,7 @@ func (*CheckOrphanedEBS) Run(ctx context.Context, client *awsclient.Client) ([]c
 			Severity:       "HIGH",
 			Description:    "Idle EBS volume not attached to any instance",
 			MonthlySavings: saving,
-			Recommendation: "xóa hoặc snapshot rồi xóa",
+			Recommendation: "Delete or snapshot volume before delete",
 			FixCommand:     fmt.Sprintf("aws ec2 delete-volume --volume-id %s", *vol.VolumeId),
 		})
 
