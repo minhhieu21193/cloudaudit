@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AWS Cost &amp; Security Audit · 123456789012</title>
+<style>
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --text: #1b1f24; --muted: #5b6573; --border: #dde1e6;
+  --accent: #1f5fbf; --code-bg: #f0f2f5;
+  --critical: #a4161a; --critical-bg: #fde8e8;
+  --high: #c2410c; --high-bg: #ffedd5;
+  --medium: #a16207; --medium-bg: #fef3c7;
+  --low: #3f6212; --low-bg: #ecfccb;
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418; --surface: #1a1f25; --text: #e6e9ed; --muted: #9aa4b1; --border: #2c333c;
+    --accent: #6ea8fe; --code-bg: #0d1014;
+    --critical: #ff8a8a; --critical-bg: #3b1416;
+    --high: #fdba74; --high-bg: #3a2210;
+    --medium: #fcd34d; --medium-bg: #352a0b;
+    --low: #bef264; --low-bg: #1e2a0e;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+main { max-width: 1080px; margin: 0 auto; padding: 32px 24px 48px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
+h2 { font-size: 20px; margin: 40px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 16px; margin: 0; }
+a { color: var(--accent); }
+code, pre { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.subtitle { color: var(--muted); margin: 0 0 20px; }
+.demo { border: 1px solid var(--accent); border-left-width: 4px; background: var(--surface); padding: 10px 14px; border-radius: 6px; margin: 0 0 20px; }
+.meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; margin: 0; }
+.meta dt { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.meta dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.card .label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.card .value { font-size: 28px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.card.waste { grid-column: span 2; border-color: var(--accent); }
+.card.waste .value { color: var(--accent); }
+.card.critical .value { color: var(--critical); } .card.high .value { color: var(--high); }
+.card.medium .value { color: var(--medium); } .card.low .value { color: var(--low); }
+.note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+.warn { background: var(--high-bg); color: var(--text); border-radius: 6px; padding: 10px 14px; margin-top: 12px; }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; background: var(--surface); }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.res code { font-size: 12px; }
+.sev { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.sev.critical { color: var(--critical); background: var(--critical-bg); }
+.sev.high { color: var(--high); background: var(--high-bg); }
+.sev.medium { color: var(--medium); background: var(--medium-bg); }
+.sev.low { color: var(--low); background: var(--low-bg); }
+.finding { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-top: 12px; break-inside: avoid; }
+.finding header { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; }
+.finding .ref { color: var(--muted); font-weight: 600; }
+.finding .cost { margin-left: auto; font-weight: 650; font-variant-numeric: tabular-nums; }
+.finding dl { display: grid; grid-template-columns: 130px 1fr; gap: 6px 14px; margin: 0; }
+.finding dt { color: var(--muted); font-size: 13px; }
+.finding dd { margin: 0; overflow-wrap: anywhere; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin: 4px 0 0; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+.fixnote { color: var(--muted); font-size: 12px; }
+footer { margin-top: 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); padding-top: 14px; }
+@media (max-width: 640px) {
+  main { padding: 20px 16px 32px; }
+  .card.waste { grid-column: span 1; }
+  .finding dl { grid-template-columns: 1fr; }
+  .finding dt { margin-top: 6px; }
+}
+@media print {
+  body { background: #fff; font-size: 12px; }
+  main { max-width: none; padding: 0; }
+  .card, .finding, .table-wrap, .meta { border-color: #ccc; }
+  h2 { break-after: avoid; }
+  tr, .finding { break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+  pre { white-space: pre-wrap; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>AWS Cost &amp; Security Audit</h1>
+<p class="subtitle">Read-only review of cost waste and security misconfigurations, with suggested fixes.</p>
+<p class="demo"><strong>Demo report.</strong> Generated by <code>cloudaudit scan --demo</code> from built-in sample data. No AWS account was accessed; the account ID, resource IDs and names are fictional.</p>
+<dl class="meta">
+  <div><dt>Account</dt><dd>123456789012</dd></div>
+  <div><dt>Scanned</dt><dd>2026-10-25 17:19 UTC</dd></div>
+  <div><dt>Regions</dt><dd>ap-northeast-1, ap-southeast-1</dd></div>
+  <div><dt>Tool</dt><dd>cloudaudit v0.1.0</dd></div>
+</dl>
+
+<h2 id="summary">Summary</h2>
+<div class="cards">
+  <div class="card waste"><div class="label">Estimated monthly waste</div><div class="value">$650.75</div><div class="note">estimate · 20 cost finding(s)</div></div>
+  <div class="card critical"><div class="label">CRITICAL</div><div class="value">3</div></div>
+  <div class="card high"><div class="label">HIGH</div><div class="value">10</div></div>
+  <div class="card medium"><div class="label">MEDIUM</div><div class="value">13</div></div>
+  <div class="card low"><div class="label">LOW</div><div class="value">10</div></div>
+  
+</div>
+<p class="note">36 finding(s): 20 cost, 16 security.
+All USD figures are estimates from on-demand list prices (storage or hourly charges only) and exclude discounts, free tier, data transfer and usage-based charges. Confirm against your bill before acting.</p>
+
+
+<h2 id="cost">Cost findings</h2>
+
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>Severity</th><th class="num">Est. USD/mo</th><th>Region</th><th>Finding</th></tr></thead>
+<tbody>
+<tr><td><a href="#c1">C1</a></td><td><span class="sev high">HIGH</span></td><td class="num">$132.00</td><td>ap-northeast-1</td><td>Instance reporting-worker stopped for 147 days</td></tr>
+<tr><td><a href="#c2">C2</a></td><td><span class="sev high">HIGH</span></td><td class="num">$108.00</td><td>ap-southeast-1</td><td>Unattached st1 volume log-archive-2023 (2000 GiB)</td></tr>
+<tr><td><a href="#c3">C3</a></td><td><span class="sev medium">MEDIUM</span></td><td class="num">$60.00</td><td>ap-northeast-1</td><td>Unattached gp2 volume jenkins-data-old (500 GiB)</td></tr>
+<tr><td><a href="#c4">C4</a></td><td><span class="sev medium">MEDIUM</span></td><td class="num">$45.26</td><td>ap-northeast-1</td><td>NAT Gateway staging-nat-1c sent 184.0 MiB in 14 days</td></tr>
+<tr><td><a href="#c5">C5</a></td><td><span class="sev medium">MEDIUM</span></td><td class="num">$43.07</td><td>ap-southeast-1</td><td>NAT Gateway dr-nat-1a sent 22.0 MiB in 14 days</td></tr>
+<tr><td><a href="#c6">C6</a></td><td><span class="sev medium">MEDIUM</span></td><td class="num">$40.00</td><td>ap-northeast-1</td><td>Snapshot snap-0a9b8c7d6e5f40312 is 401 days old and its volume is gone</td></tr>
+<tr><td><a href="#c7">C7</a></td><td><span class="sev medium">MEDIUM</span></td><td class="num">$40.00</td><td>ap-southeast-1</td><td>Snapshot snap-02c3d4e5f6a7b8089 is 395 days old and its volume is gone</td></tr>
+<tr><td><a href="#c8">C8</a></td><td><span class="sev medium">MEDIUM</span></td><td class="num">$36.00</td><td>ap-northeast-1</td><td>gp2 volume prod-db-data (1500 GiB) can move to gp3</td></tr>
+<tr><td><a href="#c9">C9</a></td><td><span class="sev medium">MEDIUM</span></td><td class="num">$25.00</td><td>ap-northeast-1</td><td>Snapshot snap-0b8c7d6e5f4a30423 is 380 days old and its volume is gone</td></tr>
+<tr><td><a href="#c10">C10</a></td><td><span class="sev medium">MEDIUM</span></td><td class="num">$25.00</td><td>ap-northeast-1</td><td>Snapshot snap-0c7d6e5f4a3b20534 is 373 days old and its volume is gone</td></tr>
+<tr><td><a href="#c11">C11</a></td><td><span class="sev low">LOW</span></td><td class="num">$18.40</td><td>ap-southeast-1</td><td>Application load balancer dr-failover looks idle</td></tr>
+<tr><td><a href="#c12">C12</a></td><td><span class="sev low">LOW</span></td><td class="num">$17.74</td><td>ap-northeast-1</td><td>Application load balancer staging-web looks idle</td></tr>
+<tr><td><a href="#c13">C13</a></td><td><span class="sev low">LOW</span></td><td class="num">$17.74</td><td>ap-northeast-1</td><td>Network load balancer legacy-mqtt looks idle</td></tr>
+<tr><td><a href="#c14">C14</a></td><td><span class="sev low">LOW</span></td><td class="num">$10.00</td><td>ap-northeast-1</td><td>Snapshot snap-0d6e5f4a3b2c10645 is 215 days old and its volume is gone</td></tr>
+<tr><td><a href="#c15">C15</a></td><td><span class="sev low">LOW</span></td><td class="num">$9.60</td><td>ap-northeast-1</td><td>Unattached gp3 volume db-migration-scratch (100 GiB)</td></tr>
+<tr><td><a href="#c16">C16</a></td><td><span class="sev low">LOW</span></td><td class="num">$7.20</td><td>ap-southeast-1</td><td>gp2 volume dr-app-data (300 GiB) can move to gp3</td></tr>
+<tr><td><a href="#c17">C17</a></td><td><span class="sev low">LOW</span></td><td class="num">$4.80</td><td>ap-northeast-1</td><td>gp2 volume api-1-data (200 GiB) can move to gp3</td></tr>
+<tr><td><a href="#c18">C18</a></td><td><span class="sev low">LOW</span></td><td class="num">$3.65</td><td>ap-northeast-1</td><td>Elastic IP 203.0.113.24 (old-vpn-endpoint) is not associated</td></tr>
+<tr><td><a href="#c19">C19</a></td><td><span class="sev low">LOW</span></td><td class="num">$3.65</td><td>ap-northeast-1</td><td>Elastic IP 203.0.113.57 is not associated</td></tr>
+<tr><td><a href="#c20">C20</a></td><td><span class="sev low">LOW</span></td><td class="num">$3.65</td><td>ap-southeast-1</td><td>Elastic IP 198.51.100.33 (dr-standby) is not associated</td></tr>
+</tbody>
+</table></div>
+<article class="finding" id="c1">
+<header><span class="ref">C1</span><span class="sev high">HIGH</span><h3>Instance reporting-worker stopped for 147 days</h3><span class="cost">$132.00/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>i-0c34d56e78f90a123</code> · ap-northeast-1 · <code>ec2-stopped</code></dd>
+  <dt>Evidence</dt><dd>m5.xlarge stopped since 2026-05-31 (147 days, threshold 30). 2 attached EBS volume(s), 1100 GiB in total, still billed.</dd>
+  <dt>Recommendation</dt><dd>If the instance is no longer needed, create an AMI as a backup and terminate it. Otherwise snapshot and delete the data volumes it does not need. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Stop_Start.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 create-image --region ap-northeast-1 --instance-id i-0c34d56e78f90a123 --name &#34;i-0c34d56e78f90a123-final-backup&#34;
+aws ec2 terminate-instances --region ap-northeast-1 --instance-ids i-0c34d56e78f90a123</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c2">
+<header><span class="ref">C2</span><span class="sev high">HIGH</span><h3>Unattached st1 volume log-archive-2023 (2000 GiB)</h3><span class="cost">$108.00/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>vol-03c4d5e6f7a8b92a3</code> · ap-southeast-1 · <code>ebs-unattached</code></dd>
+  <dt>Evidence</dt><dd>State is available (attached to nothing). Created 2024-11-23, 701 days ago. 2000 GiB st1 at $0.054/GB-month (storage only).</dd>
+  <dt>Recommendation</dt><dd>Confirm with the owner that the data is not needed. Take a final snapshot if in doubt, then delete the volume. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/ebs-deleting-volume.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 create-snapshot --region ap-southeast-1 --volume-id vol-03c4d5e6f7a8b92a3 --description &#34;final snapshot before delete&#34;
+aws ec2 delete-volume --region ap-southeast-1 --volume-id vol-03c4d5e6f7a8b92a3</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c3">
+<header><span class="ref">C3</span><span class="sev medium">MEDIUM</span><h3>Unattached gp2 volume jenkins-data-old (500 GiB)</h3><span class="cost">$60.00/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>vol-0a1f3c5e7b9d24680</code> · ap-northeast-1 · <code>ebs-unattached</code></dd>
+  <dt>Evidence</dt><dd>State is available (attached to nothing). Created 2025-09-08, 412 days ago. 500 GiB gp2 at $0.120/GB-month (storage only).</dd>
+  <dt>Recommendation</dt><dd>Confirm with the owner that the data is not needed. Take a final snapshot if in doubt, then delete the volume. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/ebs-deleting-volume.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 create-snapshot --region ap-northeast-1 --volume-id vol-0a1f3c5e7b9d24680 --description &#34;final snapshot before delete&#34;
+aws ec2 delete-volume --region ap-northeast-1 --volume-id vol-0a1f3c5e7b9d24680</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c4">
+<header><span class="ref">C4</span><span class="sev medium">MEDIUM</span><h3>NAT Gateway staging-nat-1c sent 184.0 MiB in 14 days</h3><span class="cost">$45.26/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>nat-0b2c3d4e5f6a7189a</code> · ap-northeast-1 · <code>nat-idle</code></dd>
+  <dt>Evidence</dt><dd>BytesOutToDestination over the last 14 days: 184.0 MiB (idle threshold 1.00 GiB). VPC vpc-0a7c9e1b3d5f70246, subnet subnet-0b2c3d4e5f6a7189a. Billed $0.062/hour plus data processing.</dd>
+  <dt>Recommendation</dt><dd>Check the route tables that point at this gateway. If nothing needs outbound internet from those subnets, delete it and release its Elastic IP; VPC endpoints may cover AWS-service traffic more cheaply. <a href="https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateway-cloudwatch.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 describe-route-tables --region ap-northeast-1 --filters Name=route.nat-gateway-id,Values=nat-0b2c3d4e5f6a7189a
+aws ec2 delete-nat-gateway --region ap-northeast-1 --nat-gateway-id nat-0b2c3d4e5f6a7189a
+aws ec2 release-address --region ap-northeast-1 --allocation-id eipalloc-0e5f6a7b8c9d0415c  # after the gateway is deleted</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c5">
+<header><span class="ref">C5</span><span class="sev medium">MEDIUM</span><h3>NAT Gateway dr-nat-1a sent 22.0 MiB in 14 days</h3><span class="cost">$43.07/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>nat-0c3d4e5f6a7b8290b</code> · ap-southeast-1 · <code>nat-idle</code></dd>
+  <dt>Evidence</dt><dd>BytesOutToDestination over the last 14 days: 22.0 MiB (idle threshold 1.00 GiB). VPC vpc-0b8d0f2c4e6a81357, subnet subnet-0c3d4e5f6a7b8290b. Billed $0.059/hour plus data processing.</dd>
+  <dt>Recommendation</dt><dd>Check the route tables that point at this gateway. If nothing needs outbound internet from those subnets, delete it and release its Elastic IP; VPC endpoints may cover AWS-service traffic more cheaply. <a href="https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateway-cloudwatch.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 describe-route-tables --region ap-southeast-1 --filters Name=route.nat-gateway-id,Values=nat-0c3d4e5f6a7b8290b
+aws ec2 delete-nat-gateway --region ap-southeast-1 --nat-gateway-id nat-0c3d4e5f6a7b8290b
+aws ec2 release-address --region ap-southeast-1 --allocation-id eipalloc-01a2b3c4d5e6f7a8b  # after the gateway is deleted</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c6">
+<header><span class="ref">C6</span><span class="sev medium">MEDIUM</span><h3>Snapshot snap-0a9b8c7d6e5f40312 is 401 days old and its volume is gone</h3><span class="cost">$40.00/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>snap-0a9b8c7d6e5f40312</code> · ap-northeast-1 · <code>ebs-snapshot-orphaned</code></dd>
+  <dt>Evidence</dt><dd>Created 2025-09-19 from volume vol-0123456789abcdef0, which no longer exists. Not used by any AMI owned by this account. Priced at the full source size of 800 GiB, an upper bound: snapshots are incremental and may bill less. Description: &#34;pre-migration backup of mysql-legacy&#34;.</dd>
+  <dt>Recommendation</dt><dd>Confirm no restore or compliance requirement depends on it, then delete it. To keep it cheaply, move it to the archive tier instead. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/ebs-deleting-snapshot.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 delete-snapshot --region ap-northeast-1 --snapshot-id snap-0a9b8c7d6e5f40312</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c7">
+<header><span class="ref">C7</span><span class="sev medium">MEDIUM</span><h3>Snapshot snap-02c3d4e5f6a7b8089 is 395 days old and its volume is gone</h3><span class="cost">$40.00/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>snap-02c3d4e5f6a7b8089</code> · ap-southeast-1 · <code>ebs-snapshot-orphaned</code></dd>
+  <dt>Evidence</dt><dd>Created 2025-09-25 from a copied snapshot (no source volume), which no longer exists. Not used by any AMI owned by this account. Priced at the full source size of 800 GiB, an upper bound: snapshots are incremental and may bill less. Description: &#34;Copied for DestinationAmi from ap-northeast-1&#34;.</dd>
+  <dt>Recommendation</dt><dd>Confirm no restore or compliance requirement depends on it, then delete it. To keep it cheaply, move it to the archive tier instead. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/ebs-deleting-snapshot.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 delete-snapshot --region ap-southeast-1 --snapshot-id snap-02c3d4e5f6a7b8089</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c8">
+<header><span class="ref">C8</span><span class="sev medium">MEDIUM</span><h3>gp2 volume prod-db-data (1500 GiB) can move to gp3</h3><span class="cost">$36.00/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>vol-0c3d5e7f9a1b46802</code> · ap-northeast-1 · <code>ebs-gp2-to-gp3</code></dd>
+  <dt>Evidence</dt><dd>In use by i-0a12b34c56d78e901. gp2 $0.120 vs gp3 $0.096 per GB-month. At 1500 GiB the gp2 baseline is 4500 IOPS; provision gp3 IOPS to match, which reduces the saving.</dd>
+  <dt>Recommendation</dt><dd>Modify the volume to gp3. The change is online and needs no downtime. Check CloudWatch VolumeReadOps/VolumeWriteOps first and provision gp3 IOPS/throughput to match real usage. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/requesting-ebs-volume-modifications.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 modify-volume --region ap-northeast-1 --volume-id vol-0c3d5e7f9a1b46802 --volume-type gp3</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c9">
+<header><span class="ref">C9</span><span class="sev medium">MEDIUM</span><h3>Snapshot snap-0b8c7d6e5f4a30423 is 380 days old and its volume is gone</h3><span class="cost">$25.00/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>snap-0b8c7d6e5f4a30423</code> · ap-northeast-1 · <code>ebs-snapshot-orphaned</code></dd>
+  <dt>Evidence</dt><dd>Created 2025-10-10 from volume vol-0234567890abcdef1, which no longer exists. Not used by any AMI owned by this account. Priced at the full source size of 500 GiB, an upper bound: snapshots are incremental and may bill less. Description: &#34;weekly-backup jenkins&#34;.</dd>
+  <dt>Recommendation</dt><dd>Confirm no restore or compliance requirement depends on it, then delete it. To keep it cheaply, move it to the archive tier instead. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/ebs-deleting-snapshot.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 delete-snapshot --region ap-northeast-1 --snapshot-id snap-0b8c7d6e5f4a30423</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c10">
+<header><span class="ref">C10</span><span class="sev medium">MEDIUM</span><h3>Snapshot snap-0c7d6e5f4a3b20534 is 373 days old and its volume is gone</h3><span class="cost">$25.00/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>snap-0c7d6e5f4a3b20534</code> · ap-northeast-1 · <code>ebs-snapshot-orphaned</code></dd>
+  <dt>Evidence</dt><dd>Created 2025-10-17 from volume vol-0234567890abcdef1, which no longer exists. Not used by any AMI owned by this account. Priced at the full source size of 500 GiB, an upper bound: snapshots are incremental and may bill less. Description: &#34;weekly-backup jenkins&#34;.</dd>
+  <dt>Recommendation</dt><dd>Confirm no restore or compliance requirement depends on it, then delete it. To keep it cheaply, move it to the archive tier instead. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/ebs-deleting-snapshot.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 delete-snapshot --region ap-northeast-1 --snapshot-id snap-0c7d6e5f4a3b20534</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c11">
+<header><span class="ref">C11</span><span class="sev low">LOW</span><h3>Application load balancer dr-failover looks idle</h3><span class="cost">$18.40/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>arn:aws:elasticloadbalancing:ap-southeast-1:123456789012:loadbalancer/app/dr-failover/6a4c2e0b8d1f3957</code> · ap-southeast-1 · <code>elb-idle</code></dd>
+  <dt>Evidence</dt><dd>No healthy targets across 1 target group(s). Scheme internet-facing. Base price $0.0252/hour; capacity units (LCU) not included.</dd>
+  <dt>Recommendation</dt><dd>Confirm no DNS record or client still points at it (check Route 53 and the DNS name dr-failover-1234567890.ap-southeast-1.elb.amazonaws.com), then delete it. Turn off deletion protection first if it is on. <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws elbv2 delete-load-balancer --region ap-southeast-1 --load-balancer-arn arn:aws:elasticloadbalancing:ap-southeast-1:123456789012:loadbalancer/app/dr-failover/6a4c2e0b8d1f3957</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c12">
+<header><span class="ref">C12</span><span class="sev low">LOW</span><h3>Application load balancer staging-web looks idle</h3><span class="cost">$17.74/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:loadbalancer/app/staging-web/8e2b6d4f1a3c5079</code> · ap-northeast-1 · <code>elb-idle</code></dd>
+  <dt>Evidence</dt><dd>No healthy targets across 1 target group(s). Scheme internet-facing. Base price $0.0243/hour; capacity units (LCU) not included.</dd>
+  <dt>Recommendation</dt><dd>Confirm no DNS record or client still points at it (check Route 53 and the DNS name staging-web-1234567890.ap-northeast-1.elb.amazonaws.com), then delete it. Turn off deletion protection first if it is on. <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws elbv2 delete-load-balancer --region ap-northeast-1 --load-balancer-arn arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:loadbalancer/app/staging-web/8e2b6d4f1a3c5079</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c13">
+<header><span class="ref">C13</span><span class="sev low">LOW</span><h3>Network load balancer legacy-mqtt looks idle</h3><span class="cost">$17.74/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:loadbalancer/net/legacy-mqtt/3c7e1a9f5b2d8064</code> · ap-northeast-1 · <code>elb-idle</code></dd>
+  <dt>Evidence</dt><dd>NewFlowCount over the last 14 days: 14 (idle threshold 100). 1 healthy target(s). Scheme internet-facing. Base price $0.0243/hour; capacity units (LCU) not included.</dd>
+  <dt>Recommendation</dt><dd>Confirm no DNS record or client still points at it (check Route 53 and the DNS name legacy-mqtt-1234567890.ap-northeast-1.elb.amazonaws.com), then delete it. Turn off deletion protection first if it is on. <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws elbv2 delete-load-balancer --region ap-northeast-1 --load-balancer-arn arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:loadbalancer/net/legacy-mqtt/3c7e1a9f5b2d8064</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c14">
+<header><span class="ref">C14</span><span class="sev low">LOW</span><h3>Snapshot snap-0d6e5f4a3b2c10645 is 215 days old and its volume is gone</h3><span class="cost">$10.00/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>snap-0d6e5f4a3b2c10645</code> · ap-northeast-1 · <code>ebs-snapshot-orphaned</code></dd>
+  <dt>Evidence</dt><dd>Created 2026-03-24 from volume vol-0345678901abcdef2, which no longer exists. Not used by any AMI owned by this account. Priced at the full source size of 200 GiB, an upper bound: snapshots are incremental and may bill less.</dd>
+  <dt>Recommendation</dt><dd>Confirm no restore or compliance requirement depends on it, then delete it. To keep it cheaply, move it to the archive tier instead. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/ebs-deleting-snapshot.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 delete-snapshot --region ap-northeast-1 --snapshot-id snap-0d6e5f4a3b2c10645</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c15">
+<header><span class="ref">C15</span><span class="sev low">LOW</span><h3>Unattached gp3 volume db-migration-scratch (100 GiB)</h3><span class="cost">$9.60/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>vol-0b2e4d6f8a1c35791</code> · ap-northeast-1 · <code>ebs-unattached</code></dd>
+  <dt>Evidence</dt><dd>State is available (attached to nothing). Created 2026-08-23, 63 days ago. 100 GiB gp3 at $0.096/GB-month (storage only).</dd>
+  <dt>Recommendation</dt><dd>Confirm with the owner that the data is not needed. Take a final snapshot if in doubt, then delete the volume. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/ebs-deleting-volume.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 create-snapshot --region ap-northeast-1 --volume-id vol-0b2e4d6f8a1c35791 --description &#34;final snapshot before delete&#34;
+aws ec2 delete-volume --region ap-northeast-1 --volume-id vol-0b2e4d6f8a1c35791</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c16">
+<header><span class="ref">C16</span><span class="sev low">LOW</span><h3>gp2 volume dr-app-data (300 GiB) can move to gp3</h3><span class="cost">$7.20/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>vol-04d5e6f7a8b9c03b4</code> · ap-southeast-1 · <code>ebs-gp2-to-gp3</code></dd>
+  <dt>Evidence</dt><dd>In use by i-0e56f78a90b12c345. gp2 $0.120 vs gp3 $0.096 per GB-month.</dd>
+  <dt>Recommendation</dt><dd>Modify the volume to gp3. The change is online and needs no downtime. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/requesting-ebs-volume-modifications.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 modify-volume --region ap-southeast-1 --volume-id vol-04d5e6f7a8b9c03b4 --volume-type gp3</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c17">
+<header><span class="ref">C17</span><span class="sev low">LOW</span><h3>gp2 volume api-1-data (200 GiB) can move to gp3</h3><span class="cost">$4.80/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>vol-0d4e6f8a1b2c57913</code> · ap-northeast-1 · <code>ebs-gp2-to-gp3</code></dd>
+  <dt>Evidence</dt><dd>In use by i-0b23c45d67e89f012. gp2 $0.120 vs gp3 $0.096 per GB-month.</dd>
+  <dt>Recommendation</dt><dd>Modify the volume to gp3. The change is online and needs no downtime. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/requesting-ebs-volume-modifications.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 modify-volume --region ap-northeast-1 --volume-id vol-0d4e6f8a1b2c57913 --volume-type gp3</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c18">
+<header><span class="ref">C18</span><span class="sev low">LOW</span><h3>Elastic IP 203.0.113.24 (old-vpn-endpoint) is not associated</h3><span class="cost">$3.65/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>eipalloc-0a1b2c3d4e5f60718</code> · ap-northeast-1 · <code>eip-unassociated</code></dd>
+  <dt>Evidence</dt><dd>Allocation eipalloc-0a1b2c3d4e5f60718 has no association and no network interface. Public IPv4 is billed at $0.005/hour whether used or idle.</dd>
+  <dt>Recommendation</dt><dd>Release the address unless it is allow-listed somewhere and must be kept; if so, document why. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/working-with-eips.html#using-instance-addressing-eips-releasing">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 release-address --region ap-northeast-1 --allocation-id eipalloc-0a1b2c3d4e5f60718</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c19">
+<header><span class="ref">C19</span><span class="sev low">LOW</span><h3>Elastic IP 203.0.113.57 is not associated</h3><span class="cost">$3.65/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>eipalloc-0b2c3d4e5f6a71829</code> · ap-northeast-1 · <code>eip-unassociated</code></dd>
+  <dt>Evidence</dt><dd>Allocation eipalloc-0b2c3d4e5f6a71829 has no association and no network interface. Public IPv4 is billed at $0.005/hour whether used or idle.</dd>
+  <dt>Recommendation</dt><dd>Release the address unless it is allow-listed somewhere and must be kept; if so, document why. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/working-with-eips.html#using-instance-addressing-eips-releasing">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 release-address --region ap-northeast-1 --allocation-id eipalloc-0b2c3d4e5f6a71829</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="c20">
+<header><span class="ref">C20</span><span class="sev low">LOW</span><h3>Elastic IP 198.51.100.33 (dr-standby) is not associated</h3><span class="cost">$3.65/mo <span class="fixnote">est.</span></span></header>
+<dl>
+  <dt>Resource</dt><dd><code>eipalloc-0f6a7b8c9d0e1526d</code> · ap-southeast-1 · <code>eip-unassociated</code></dd>
+  <dt>Evidence</dt><dd>Allocation eipalloc-0f6a7b8c9d0e1526d has no association and no network interface. Public IPv4 is billed at $0.005/hour whether used or idle.</dd>
+  <dt>Recommendation</dt><dd>Release the address unless it is allow-listed somewhere and must be kept; if so, document why. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/working-with-eips.html#using-instance-addressing-eips-releasing">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 release-address --region ap-southeast-1 --allocation-id eipalloc-0f6a7b8c9d0e1526d</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+
+
+
+<h2 id="security">Security findings</h2>
+
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>Severity</th><th>Region</th><th>Finding</th></tr></thead>
+<tbody>
+<tr><td><a href="#s1">S1</a></td><td><span class="sev critical">CRITICAL</span></td><td>global</td><td>Root user has access keys</td></tr>
+<tr><td><a href="#s2">S2</a></td><td><span class="sev critical">CRITICAL</span></td><td>ap-northeast-1</td><td>Security group db-debug-temp is open to the internet on admin/DB ports</td></tr>
+<tr><td><a href="#s3">S3</a></td><td><span class="sev critical">CRITICAL</span></td><td>ap-southeast-1</td><td>Security group vendor-temp-access is open to the internet on admin/DB ports</td></tr>
+<tr><td><a href="#s4">S4</a></td><td><span class="sev high">HIGH</span></td><td>global</td><td>No multi-region CloudTrail trail is logging</td></tr>
+<tr><td><a href="#s5">S5</a></td><td><span class="sev high">HIGH</span></td><td>global</td><td>IAM user bob has console access without MFA</td></tr>
+<tr><td><a href="#s6">S6</a></td><td><span class="sev high">HIGH</span></td><td>global</td><td>IAM user contractor-dev has console access without MFA</td></tr>
+<tr><td><a href="#s7">S7</a></td><td><span class="sev high">HIGH</span></td><td>ap-northeast-1</td><td>RDS instance reporting-replica (mysql db.t3.medium) is publicly accessible</td></tr>
+<tr><td><a href="#s8">S8</a></td><td><span class="sev high">HIGH</span></td><td>ap-northeast-1</td><td>RDS instance reporting-replica (mysql db.t3.medium) is not encrypted at rest</td></tr>
+<tr><td><a href="#s9">S9</a></td><td><span class="sev high">HIGH</span></td><td>ap-southeast-1</td><td>RDS instance legacy-mysql-dr (mysql db.t3.small) is not encrypted at rest</td></tr>
+<tr><td><a href="#s10">S10</a></td><td><span class="sev high">HIGH</span></td><td>global</td><td>Account-level S3 Block Public Access is not fully enabled</td></tr>
+<tr><td><a href="#s11">S11</a></td><td><span class="sev high">HIGH</span></td><td>ap-northeast-1</td><td>Security group legacy-bastion is open to the internet on admin/DB ports</td></tr>
+<tr><td><a href="#s12">S12</a></td><td><span class="sev medium">MEDIUM</span></td><td>ap-southeast-1</td><td>EBS encryption by default is off in ap-southeast-1</td></tr>
+<tr><td><a href="#s13">S13</a></td><td><span class="sev medium">MEDIUM</span></td><td>global</td><td>Access key AKIAI44QH8DHBEXAMPLE for backup-script has not been used in 90&#43; days</td></tr>
+<tr><td><a href="#s14">S14</a></td><td><span class="sev medium">MEDIUM</span></td><td>global</td><td>Access key AKIAIOSFODNN7EXAMPLE for ci-deploy is 412 days old</td></tr>
+<tr><td><a href="#s15">S15</a></td><td><span class="sev medium">MEDIUM</span></td><td>global</td><td>S3 bucket examplecorp-data-exports is not protected by Block Public Access</td></tr>
+<tr><td><a href="#s16">S16</a></td><td><span class="sev medium">MEDIUM</span></td><td>global</td><td>S3 bucket examplecorp-marketing-site is not protected by Block Public Access</td></tr>
+</tbody>
+</table></div>
+<article class="finding" id="s1">
+<header><span class="ref">S1</span><span class="sev critical">CRITICAL</span><h3>Root user has access keys</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>root/access-keys</code> · global · <code>root-account</code></dd>
+  <dt>Evidence</dt><dd>GetAccountSummary: AccountAccessKeysPresent=1. Root keys cannot be limited by any IAM policy.</dd>
+  <dt>Recommendation</dt><dd>Sign in as the root user, check when each key was last used, move any automation to an IAM role, then delete the root access keys. <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/root-user-best-practices.html">AWS docs</a></dd>
+  
+</dl>
+</article>
+<article class="finding" id="s2">
+<header><span class="ref">S2</span><span class="sev critical">CRITICAL</span><h3>Security group db-debug-temp is open to the internet on admin/DB ports</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>sg-0b2c3d4e5f6a71829</code> · ap-northeast-1 · <code>sg-open-admin-ports</code></dd>
+  <dt>Evidence</dt><dd>VPC vpc-0a7c9e1b3d5f70246. Inbound rules: tcp 5432 from 0.0.0.0/0 (5432/PostgreSQL).</dd>
+  <dt>Recommendation</dt><dd>Remove the 0.0.0.0/0 and ::/0 rules. Reach instances through SSM Session Manager or a VPN, and allow databases only from application security groups. <a href="https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 revoke-security-group-ingress --region ap-northeast-1 --group-id sg-0b2c3d4e5f6a71829 --ip-permissions &#39;IpProtocol=tcp,FromPort=5432,ToPort=5432,IpRanges=[{CidrIp=0.0.0.0/0}]&#39;</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s3">
+<header><span class="ref">S3</span><span class="sev critical">CRITICAL</span><h3>Security group vendor-temp-access is open to the internet on admin/DB ports</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>sg-0e5f6a7b8c9d0415c</code> · ap-southeast-1 · <code>sg-open-admin-ports</code></dd>
+  <dt>Evidence</dt><dd>VPC vpc-0b8d0f2c4e6a81357. Inbound rules: all traffic from 0.0.0.0/0 (22/SSH, 3389/RDP, 3306/MySQL, 5432/PostgreSQL, 6379/Redis, 27017/MongoDB).</dd>
+  <dt>Recommendation</dt><dd>Remove the 0.0.0.0/0 and ::/0 rules. Reach instances through SSM Session Manager or a VPN, and allow databases only from application security groups. <a href="https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 revoke-security-group-ingress --region ap-southeast-1 --group-id sg-0e5f6a7b8c9d0415c --ip-permissions &#39;IpProtocol=-1,IpRanges=[{CidrIp=0.0.0.0/0}]&#39;</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s4">
+<header><span class="ref">S4</span><span class="sev high">HIGH</span><h3>No multi-region CloudTrail trail is logging</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>cloudtrail</code> · global · <code>cloudtrail-multi-region</code></dd>
+  <dt>Evidence</dt><dd>Trails found: tokyo-only-trail (single-region). None is both multi-region and logging.</dd>
+  <dt>Recommendation</dt><dd>Create one multi-region trail (or an organization trail) delivering to a dedicated, access-restricted S3 bucket, with log file validation on. Without it there is no durable record of API activity for incident response. <a href="https://docs.aws.amazon.com/awscloudtrail/latest/userguide/receive-cloudtrail-log-files-from-multiple-regions.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws cloudtrail create-trail --name account-audit --s3-bucket-name &lt;log-bucket&gt; --is-multi-region-trail --enable-log-file-validation
+aws cloudtrail start-logging --name account-audit</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s5">
+<header><span class="ref">S5</span><span class="sev high">HIGH</span><h3>IAM user bob has console access without MFA</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>arn:aws:iam::123456789012:user/bob</code> · global · <code>iam-user-no-mfa</code></dd>
+  <dt>Evidence</dt><dd>Console password set 2025-01-23; last console sign-in 2026-10-22 (3 days ago); 0 MFA devices.</dd>
+  <dt>Recommendation</dt><dd>Have the user register an MFA device (IAM console &gt; Users &gt; Security credentials &gt; Assign MFA device) and add a policy that denies actions without MFA. If the user never signs in to the console, remove the password instead. <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre># If console access is not needed:
+aws iam delete-login-profile --user-name bob</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s6">
+<header><span class="ref">S6</span><span class="sev high">HIGH</span><h3>IAM user contractor-dev has console access without MFA</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>arn:aws:iam::123456789012:user/contractor-dev</code> · global · <code>iam-user-no-mfa</code></dd>
+  <dt>Evidence</dt><dd>Console password set 2026-08-11; last console sign-in never; 0 MFA devices.</dd>
+  <dt>Recommendation</dt><dd>Have the user register an MFA device (IAM console &gt; Users &gt; Security credentials &gt; Assign MFA device) and add a policy that denies actions without MFA. If the user never signs in to the console, remove the password instead. <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre># If console access is not needed:
+aws iam delete-login-profile --user-name contractor-dev</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s7">
+<header><span class="ref">S7</span><span class="sev high">HIGH</span><h3>RDS instance reporting-replica (mysql db.t3.medium) is publicly accessible</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>reporting-replica</code> · ap-northeast-1 · <code>rds-public</code></dd>
+  <dt>Evidence</dt><dd>PubliclyAccessible=true: the instance has a public IP, and only its security groups stand between it and the internet. Endpoint reporting-replica.c1a2b3c4d5e6.ap-northeast-1.rds.amazonaws.com:3306.</dd>
+  <dt>Recommendation</dt><dd>Turn off public access and connect from inside the VPC (application subnets, a bastion via SSM, or a VPN). Check the instance&#39;s security groups for 0.0.0.0/0 rules too. <a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.WorkingWithRDSInstanceinaVPC.html#USER_VPC.Hiding">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws rds modify-db-instance --region ap-northeast-1 --db-instance-identifier reporting-replica --no-publicly-accessible --apply-immediately</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s8">
+<header><span class="ref">S8</span><span class="sev high">HIGH</span><h3>RDS instance reporting-replica (mysql db.t3.medium) is not encrypted at rest</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>reporting-replica</code> · ap-northeast-1 · <code>rds-unencrypted</code></dd>
+  <dt>Evidence</dt><dd>StorageEncrypted=false, 200 GiB allocated. Its automated backups and snapshots are unencrypted too.</dd>
+  <dt>Recommendation</dt><dd>Encryption cannot be turned on in place. Snapshot the instance, copy the snapshot with a KMS key, restore from the encrypted copy and cut over during a maintenance window. <a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws rds create-db-snapshot --region ap-northeast-1 --db-instance-identifier reporting-replica --db-snapshot-identifier reporting-replica-pre-encrypt
+aws rds copy-db-snapshot --region ap-northeast-1 --source-db-snapshot-identifier reporting-replica-pre-encrypt --target-db-snapshot-identifier reporting-replica-encrypted --kms-key-id alias/aws/rds
+aws rds restore-db-instance-from-db-snapshot --region ap-northeast-1 --db-instance-identifier reporting-replica-encrypted --db-snapshot-identifier reporting-replica-encrypted</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s9">
+<header><span class="ref">S9</span><span class="sev high">HIGH</span><h3>RDS instance legacy-mysql-dr (mysql db.t3.small) is not encrypted at rest</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>legacy-mysql-dr</code> · ap-southeast-1 · <code>rds-unencrypted</code></dd>
+  <dt>Evidence</dt><dd>StorageEncrypted=false, 100 GiB allocated. Its automated backups and snapshots are unencrypted too.</dd>
+  <dt>Recommendation</dt><dd>Encryption cannot be turned on in place. Snapshot the instance, copy the snapshot with a KMS key, restore from the encrypted copy and cut over during a maintenance window. <a href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws rds create-db-snapshot --region ap-southeast-1 --db-instance-identifier legacy-mysql-dr --db-snapshot-identifier legacy-mysql-dr-pre-encrypt
+aws rds copy-db-snapshot --region ap-southeast-1 --source-db-snapshot-identifier legacy-mysql-dr-pre-encrypt --target-db-snapshot-identifier legacy-mysql-dr-encrypted --kms-key-id alias/aws/rds
+aws rds restore-db-instance-from-db-snapshot --region ap-southeast-1 --db-instance-identifier legacy-mysql-dr-encrypted --db-snapshot-identifier legacy-mysql-dr-encrypted</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s10">
+<header><span class="ref">S10</span><span class="sev high">HIGH</span><h3>Account-level S3 Block Public Access is not fully enabled</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>account/123456789012</code> · global · <code>s3-public-access-block</code></dd>
+  <dt>Evidence</dt><dd>Settings off at account level: BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, RestrictPublicBuckets. Any bucket can be made public by a policy or ACL change.</dd>
+  <dt>Recommendation</dt><dd>Turn on all four settings at account level unless a bucket must serve public content directly; serve such content through CloudFront with Origin Access Control instead. <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws s3control put-public-access-block --account-id 123456789012 --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s11">
+<header><span class="ref">S11</span><span class="sev high">HIGH</span><h3>Security group legacy-bastion is open to the internet on admin/DB ports</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>sg-0a1b2c3d4e5f60718</code> · ap-northeast-1 · <code>sg-open-admin-ports</code></dd>
+  <dt>Evidence</dt><dd>VPC vpc-0a7c9e1b3d5f70246. Inbound rules: tcp 22 from 0.0.0.0/0 (22/SSH); tcp 22 from ::/0 (22/SSH).</dd>
+  <dt>Recommendation</dt><dd>Remove the 0.0.0.0/0 and ::/0 rules. Reach instances through SSM Session Manager or a VPN, and allow databases only from application security groups. <a href="https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 revoke-security-group-ingress --region ap-northeast-1 --group-id sg-0a1b2c3d4e5f60718 --ip-permissions &#39;IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=0.0.0.0/0}]&#39;
+aws ec2 revoke-security-group-ingress --region ap-northeast-1 --group-id sg-0a1b2c3d4e5f60718 --ip-permissions &#39;IpProtocol=tcp,FromPort=22,ToPort=22,Ipv6Ranges=[{CidrIpv6=::/0}]&#39;</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s12">
+<header><span class="ref">S12</span><span class="sev medium">MEDIUM</span><h3>EBS encryption by default is off in ap-southeast-1</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>ebs-encryption-by-default</code> · ap-southeast-1 · <code>ebs-encryption-default</code></dd>
+  <dt>Evidence</dt><dd>GetEbsEncryptionByDefault returned false: new volumes and snapshot copies in this region are created unencrypted unless each request asks for encryption.</dd>
+  <dt>Recommendation</dt><dd>Turn on encryption by default. It applies to new volumes only; existing unencrypted volumes need a snapshot, an encrypted copy and a restore. <a href="https://docs.aws.amazon.com/ebs/latest/userguide/encryption-by-default.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws ec2 enable-ebs-encryption-by-default --region ap-southeast-1</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s13">
+<header><span class="ref">S13</span><span class="sev medium">MEDIUM</span><h3>Access key AKIAI44QH8DHBEXAMPLE for backup-script has not been used in 90&#43; days</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>AKIAI44QH8DHBEXAMPLE</code> · global · <code>iam-access-key-age</code></dd>
+  <dt>Evidence</dt><dd>Active key for user backup-script, created 2025-01-13 (650 days ago, limit 90), last used 2026-04-05 (203 days ago) on s3.</dd>
+  <dt>Recommendation</dt><dd>Nothing depends on this key in practice. Deactivate it, wait a week for complaints, then delete it. <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#rotating_access_keys_console">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws iam update-access-key --user-name backup-script --access-key-id AKIAI44QH8DHBEXAMPLE --status Inactive</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s14">
+<header><span class="ref">S14</span><span class="sev medium">MEDIUM</span><h3>Access key AKIAIOSFODNN7EXAMPLE for ci-deploy is 412 days old</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>AKIAIOSFODNN7EXAMPLE</code> · global · <code>iam-access-key-age</code></dd>
+  <dt>Evidence</dt><dd>Active key for user ci-deploy, created 2025-09-08 (412 days ago, limit 90), last used 2026-10-25 (0 days ago) on s3.</dd>
+  <dt>Recommendation</dt><dd>Rotate the key: create a second key, move every consumer to it, deactivate the old one, then delete it. Better still, replace long-lived keys with IAM roles or IAM Identity Center. <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#rotating_access_keys_console">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws iam create-access-key --user-name ci-deploy
+# update every consumer to the new key, then:
+aws iam update-access-key --user-name ci-deploy --access-key-id AKIAIOSFODNN7EXAMPLE --status Inactive</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s15">
+<header><span class="ref">S15</span><span class="sev medium">MEDIUM</span><h3>S3 bucket examplecorp-data-exports is not protected by Block Public Access</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>examplecorp-data-exports</code> · global · <code>s3-public-access-block</code></dd>
+  <dt>Evidence</dt><dd>Bucket in ap-southeast-1. Effective settings off (bucket and account combined): BlockPublicPolicy, RestrictPublicBuckets.</dd>
+  <dt>Recommendation</dt><dd>Enable all four settings on the bucket unless it intentionally serves public objects. Review its bucket policy and ACLs for public grants first. <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws s3api put-public-access-block --bucket examplecorp-data-exports --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+<article class="finding" id="s16">
+<header><span class="ref">S16</span><span class="sev medium">MEDIUM</span><h3>S3 bucket examplecorp-marketing-site is not protected by Block Public Access</h3></header>
+<dl>
+  <dt>Resource</dt><dd><code>examplecorp-marketing-site</code> · global · <code>s3-public-access-block</code></dd>
+  <dt>Evidence</dt><dd>Bucket in ap-northeast-1. Effective settings off (bucket and account combined): BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, RestrictPublicBuckets.</dd>
+  <dt>Recommendation</dt><dd>Enable all four settings on the bucket unless it intentionally serves public objects. Review its bucket policy and ACLs for public grants first. <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html">AWS docs</a></dd>
+  <dt>Suggested fix</dt><dd><pre>aws s3api put-public-access-block --bucket examplecorp-marketing-site --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>
+</dl>
+</article>
+
+
+
+<h2 id="coverage">Scan coverage</h2>
+<p><strong>Regions scanned:</strong> ap-northeast-1, ap-southeast-1. Account-wide checks are reported as <code>global</code>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Check</th><th>Category</th><th>Scope</th><th class="num">Findings</th><th class="num">Errors</th></tr></thead>
+<tbody>
+<tr><td><code>ebs-unattached</code> Unattached EBS volumes</td><td>cost</td><td>per region</td><td class="num">3</td><td class="num">0</td></tr>
+<tr><td><code>ebs-gp2-to-gp3</code> gp2 volumes that can move to gp3</td><td>cost</td><td>per region</td><td class="num">3</td><td class="num">0</td></tr>
+<tr><td><code>ebs-snapshot-orphaned</code> Old snapshots of deleted volumes</td><td>cost</td><td>per region</td><td class="num">5</td><td class="num">0</td></tr>
+<tr><td><code>eip-unassociated</code> Unassociated Elastic IPs</td><td>cost</td><td>per region</td><td class="num">3</td><td class="num">0</td></tr>
+<tr><td><code>ec2-stopped</code> Long-stopped EC2 instances</td><td>cost</td><td>per region</td><td class="num">1</td><td class="num">0</td></tr>
+<tr><td><code>nat-idle</code> Idle NAT Gateways</td><td>cost</td><td>per region</td><td class="num">2</td><td class="num">0</td></tr>
+<tr><td><code>elb-idle</code> Idle load balancers</td><td>cost</td><td>per region</td><td class="num">3</td><td class="num">0</td></tr>
+<tr><td><code>sg-open-admin-ports</code> Security groups open to the internet on admin/DB ports</td><td>security</td><td>per region</td><td class="num">3</td><td class="num">0</td></tr>
+<tr><td><code>ebs-encryption-default</code> EBS encryption by default disabled</td><td>security</td><td>per region</td><td class="num">1</td><td class="num">0</td></tr>
+<tr><td><code>rds-unencrypted</code> Unencrypted RDS instances</td><td>security</td><td>per region</td><td class="num">2</td><td class="num">0</td></tr>
+<tr><td><code>rds-public</code> Publicly accessible RDS instances</td><td>security</td><td>per region</td><td class="num">1</td><td class="num">0</td></tr>
+<tr><td><code>s3-public-access-block</code> S3 Block Public Access not fully enabled</td><td>security</td><td>account</td><td class="num">3</td><td class="num">0</td></tr>
+<tr><td><code>iam-user-no-mfa</code> IAM console users without MFA</td><td>security</td><td>account</td><td class="num">2</td><td class="num">0</td></tr>
+<tr><td><code>iam-access-key-age</code> Old or unused IAM access keys</td><td>security</td><td>account</td><td class="num">2</td><td class="num">0</td></tr>
+<tr><td><code>root-account</code> Root user with access keys or without MFA</td><td>security</td><td>account</td><td class="num">1</td><td class="num">0</td></tr>
+<tr><td><code>cloudtrail-multi-region</code> No logging multi-region CloudTrail trail</td><td>security</td><td>account</td><td class="num">1</td><td class="num">0</td></tr>
+</tbody>
+</table></div>
+<p class="note">All checks completed without errors.</p>
+
+<footer>Generated by cloudaudit v0.1.0 on 2026-10-25 17:19 UTC in 0.0s. Read-only: the scan used only Describe, Get and List API calls and changed nothing. Fix commands are suggestions to review; cloudaudit never runs them.</footer>
+</main>
+</body>
+</html>
+

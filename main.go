@@ -1,7 +1,11 @@
 package main
 
-import "github.com/minhhieu21193/cloudaudit/cmd"
+import (
+	"os"
+
+	"github.com/minhhieu21193/cloudaudit/cmd"
+)
 
 func main() {
-	cmd.Execute()
+	os.Exit(cmd.Execute())
 }

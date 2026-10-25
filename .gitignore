@@ -1,0 +1,15 @@
+# Build output
+/cloudaudit
+/cloudaudit.exe
+/bin/
+/dist/
+
+# Local scan output (sample reports live in examples/)
+/reports/
+*.out
+coverage.*
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
