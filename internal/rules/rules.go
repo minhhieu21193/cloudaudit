@@ -26,6 +26,11 @@ func All() []checks.Check {
 		EBSEncryptionDefault{},
 		RDSUnencrypted{},
 		RDSPublic{},
+		S3PublicAccessBlock{},
+		IAMUserNoMFA{},
+		IAMAccessKeyAge{},
+		RootAccount{},
+		CloudTrailMultiRegion{},
 	}
 }
 
