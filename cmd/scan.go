@@ -2,9 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	awsclient "github.com/minhhieu21193/cloudaudit/internal/aws"
-	EBSOrphan "github.com/minhhieu21193/cloudaudit/internal/checks/aws/ebs"
+	"github.com/minhhieu21193/cloudaudit/internal/awsapi"
+	"github.com/minhhieu21193/cloudaudit/internal/checks"
+	"github.com/minhhieu21193/cloudaudit/internal/rules"
 	"github.com/spf13/cobra"
 )
 
@@ -20,8 +23,12 @@ var scanCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("init AWS client for profile %q: %w", profile, err)
 		}
-		checker := EBSOrphan.CheckOrphanedEBS{}
-		results, err := checker.Run(cmd.Context(), client)
+		env := &checks.Env{
+			Now:     time.Now(),
+			Config:  checks.DefaultConfig(),
+			Clients: awsapi.Clients{EC2: client.Ec2},
+		}
+		results, err := rules.EBSUnattached{}.Run(cmd.Context(), env)
 		if err != nil {
 			return fmt.Errorf("orphaned EBS check: %w", err)
 		}
