@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Read-only cross-account role for a cloudaudit cost and security review.
+  The auditor's account can assume it only with the agreed ExternalId. The
+  role cannot create, change or delete anything. Delete this stack when the
+  engagement ends to revoke access.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label: { default: Auditor }
+        Parameters: [AuditorAccountId, ExternalId]
+      - Label: { default: Role }
+        Parameters: [RoleName, MaxSessionDuration]
+
+Parameters:
+  AuditorAccountId:
+    Type: String
+    Description: 12-digit AWS account ID of the auditor who will assume the role.
+    AllowedPattern: "^[0-9]{12}$"
+    ConstraintDescription: Must be a 12-digit AWS account ID.
+  ExternalId:
+    Type: String
+    NoEcho: true
+    Description: Shared secret agreed with the auditor; prevents the confused-deputy problem.
+    MinLength: 16
+    MaxLength: 1224
+    AllowedPattern: "^[A-Za-z0-9+=,.@:/-]+$"
+    ConstraintDescription: "16+ characters from: A-Z a-z 0-9 + = , . @ : / -"
+  RoleName:
+    Type: String
+    Default: CloudAuditReadOnly
+    AllowedPattern: "^[A-Za-z0-9+=,.@_-]{1,64}$"
+  MaxSessionDuration:
+    Type: Number
+    Default: 3600
+    MinValue: 3600
+    MaxValue: 43200
+    Description: Maximum session length in seconds.
+
+Resources:
+  AuditRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      Description: Read-only access for a cloudaudit review. Safe to delete after the engagement.
+      MaxSessionDuration: !Ref MaxSessionDuration
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowAuditorWithExternalId
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AuditorAccountId}:root"
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalId
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/SecurityAudit"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/job-function/ViewOnlyAccess"
+      Policies:
+        # The exact calls cloudaudit makes (same list as docs/iam-policy.json),
+        # so the scan keeps working even if the managed policies change.
+        - PolicyName: CloudAuditExactActions
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: CloudAuditReadOnly
+                Effect: Allow
+                Resource: "*"
+                Action:
+                  # BEGIN cloudaudit-actions
+                  - cloudtrail:DescribeTrails
+                  - cloudtrail:GetTrailStatus
+                  - cloudwatch:GetMetricStatistics
+                  - ec2:DescribeAddresses
+                  - ec2:DescribeImages
+                  - ec2:DescribeInstances
+                  - ec2:DescribeNatGateways
+                  - ec2:DescribeRegions
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeSnapshots
+                  - ec2:DescribeVolumes
+                  - ec2:GetEbsEncryptionByDefault
+                  - elasticloadbalancing:DescribeLoadBalancers
+                  - elasticloadbalancing:DescribeTargetGroups
+                  - elasticloadbalancing:DescribeTargetHealth
+                  - iam:GetAccessKeyLastUsed
+                  - iam:GetAccountSummary
+                  - iam:GetLoginProfile
+                  - iam:ListAccessKeys
+                  - iam:ListMFADevices
+                  - iam:ListUsers
+                  - rds:DescribeDBInstances
+                  - s3:GetAccountPublicAccessBlock
+                  - s3:GetBucketPublicAccessBlock
+                  - s3:ListAllMyBuckets
+                  # END cloudaudit-actions
+      Tags:
+        - Key: Purpose
+          Value: cloudaudit-readonly-review
+
+Outputs:
+  RoleArn:
+    Description: Send this ARN to the auditor.
+    Value: !GetAtt AuditRole.Arn
+  ScanCommand:
+    Description: What the auditor runs (the external ID is shared separately).
+    Value: !Sub "cloudaudit scan --role-arn ${AuditRole.Arn} --external-id <external-id> --all-regions --format html --out report.html"
