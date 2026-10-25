@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AWS Cost &amp; Security Audit{{if .AccountID}} · {{.AccountID}}{{end}}</title>
+<style>
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --text: #1b1f24; --muted: #5b6573; --border: #dde1e6;
+  --accent: #1f5fbf; --code-bg: #f0f2f5;
+  --critical: #a4161a; --critical-bg: #fde8e8;
+  --high: #c2410c; --high-bg: #ffedd5;
+  --medium: #a16207; --medium-bg: #fef3c7;
+  --low: #3f6212; --low-bg: #ecfccb;
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418; --surface: #1a1f25; --text: #e6e9ed; --muted: #9aa4b1; --border: #2c333c;
+    --accent: #6ea8fe; --code-bg: #0d1014;
+    --critical: #ff8a8a; --critical-bg: #3b1416;
+    --high: #fdba74; --high-bg: #3a2210;
+    --medium: #fcd34d; --medium-bg: #352a0b;
+    --low: #bef264; --low-bg: #1e2a0e;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+main { max-width: 1080px; margin: 0 auto; padding: 32px 24px 48px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
+h2 { font-size: 20px; margin: 40px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 16px; margin: 0; }
+a { color: var(--accent); }
+code, pre { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.subtitle { color: var(--muted); margin: 0 0 20px; }
+.demo { border: 1px solid var(--accent); border-left-width: 4px; background: var(--surface); padding: 10px 14px; border-radius: 6px; margin: 0 0 20px; }
+.meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; margin: 0; }
+.meta dt { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.meta dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.card .label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.card .value { font-size: 28px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.card.waste { grid-column: span 2; border-color: var(--accent); }
+.card.waste .value { color: var(--accent); }
+.card.critical .value { color: var(--critical); } .card.high .value { color: var(--high); }
+.card.medium .value { color: var(--medium); } .card.low .value { color: var(--low); }
+.note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+.warn { background: var(--high-bg); color: var(--text); border-radius: 6px; padding: 10px 14px; margin-top: 12px; }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; background: var(--surface); }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.res code { font-size: 12px; }
+.sev { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.sev.critical { color: var(--critical); background: var(--critical-bg); }
+.sev.high { color: var(--high); background: var(--high-bg); }
+.sev.medium { color: var(--medium); background: var(--medium-bg); }
+.sev.low { color: var(--low); background: var(--low-bg); }
+.finding { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-top: 12px; break-inside: avoid; }
+.finding header { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px; }
+.finding .ref { color: var(--muted); font-weight: 600; }
+.finding .cost { margin-left: auto; font-weight: 650; font-variant-numeric: tabular-nums; }
+.finding dl { display: grid; grid-template-columns: 130px 1fr; gap: 6px 14px; margin: 0; }
+.finding dt { color: var(--muted); font-size: 13px; }
+.finding dd { margin: 0; overflow-wrap: anywhere; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin: 4px 0 0; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+.fixnote { color: var(--muted); font-size: 12px; }
+footer { margin-top: 40px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); padding-top: 14px; }
+@media (max-width: 640px) {
+  main { padding: 20px 16px 32px; }
+  .card.waste { grid-column: span 1; }
+  .finding dl { grid-template-columns: 1fr; }
+  .finding dt { margin-top: 6px; }
+}
+@media print {
+  body { background: #fff; font-size: 12px; }
+  main { max-width: none; padding: 0; }
+  .card, .finding, .table-wrap, .meta { border-color: #ccc; }
+  h2 { break-after: avoid; }
+  tr, .finding { break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+  pre { white-space: pre-wrap; }
+}
+</style>
+</head>
+<body>
+<main>
+<h1>AWS Cost &amp; Security Audit</h1>
+<p class="subtitle">Read-only review of cost waste and security misconfigurations, with suggested fixes.</p>
+{{if .Demo}}<p class="demo"><strong>Demo report.</strong> Generated by <code>cloudaudit scan --demo</code> from built-in sample data. No AWS account was accessed; the account ID, resource IDs and names are fictional.</p>{{end}}
+<dl class="meta">
+  <div><dt>Account</dt><dd>{{if .AccountID}}{{.AccountID}}{{else}}unknown{{end}}</dd></div>
+  <div><dt>Scanned</dt><dd>{{date .GeneratedAt}}</dd></div>
+  <div><dt>Regions</dt><dd>{{join .Regions ", "}}</dd></div>
+  <div><dt>Tool</dt><dd>cloudaudit {{.Version}}</dd></div>
+</dl>
+
+<h2 id="summary">Summary</h2>
+<div class="cards">
+  <div class="card waste"><div class="label">Estimated monthly waste</div><div class="value">{{usd .Summary.EstMonthlyWasteUSD}}</div><div class="note">estimate · {{len .Cost}} cost finding(s)</div></div>
+  {{range .Summary.BySeverity}}<div class="card {{sevClass .Severity}}"><div class="label">{{.Severity}}</div><div class="value">{{.Count}}</div></div>
+  {{end}}
+</div>
+<p class="note">{{.Summary.Total}} finding(s): {{len .Cost}} cost, {{len .Security}} security.{{if .Summary.Hidden}} {{.Summary.Hidden}} finding(s) below {{.MinSeverity}} are not shown.{{end}}
+All USD figures are estimates from on-demand list prices (storage or hourly charges only) and exclude discounts, free tier, data transfer and usage-based charges. Confirm against your bill before acting.</p>
+{{if .Errors}}<p class="warn"><strong>Incomplete scan:</strong> {{len .Errors}} region/check error(s). See <a href="#coverage">Scan coverage</a>.</p>{{end}}
+
+<h2 id="cost">Cost findings</h2>
+{{if .Cost}}
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>Severity</th><th class="num">Est. USD/mo</th><th>Region</th><th>Finding</th></tr></thead>
+<tbody>
+{{range $i, $f := .Cost}}<tr><td><a href="#c{{inc $i}}">C{{inc $i}}</a></td><td><span class="sev {{sevClass $f.Severity}}">{{$f.Severity}}</span></td><td class="num">{{usd $f.EstMonthlyUSD}}</td><td>{{$f.Region}}</td><td>{{$f.Title}}</td></tr>
+{{end}}</tbody>
+</table></div>
+{{range $i, $f := .Cost}}{{template "finding" (item "C" (inc $i) $f)}}{{end}}
+{{else}}<p>No cost findings.</p>{{end}}
+
+<h2 id="security">Security findings</h2>
+{{if .Security}}
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>Severity</th><th>Region</th><th>Finding</th></tr></thead>
+<tbody>
+{{range $i, $f := .Security}}<tr><td><a href="#s{{inc $i}}">S{{inc $i}}</a></td><td><span class="sev {{sevClass $f.Severity}}">{{$f.Severity}}</span></td><td>{{$f.Region}}</td><td>{{$f.Title}}</td></tr>
+{{end}}</tbody>
+</table></div>
+{{range $i, $f := .Security}}{{template "finding" (item "S" (inc $i) $f)}}{{end}}
+{{else}}<p>No security findings.</p>{{end}}
+
+<h2 id="coverage">Scan coverage</h2>
+<p><strong>Regions scanned:</strong> {{join .Regions ", "}}. Account-wide checks are reported as <code>global</code>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Check</th><th>Category</th><th>Scope</th><th class="num">Findings</th><th class="num">Errors</th></tr></thead>
+<tbody>
+{{range .Checks}}<tr><td><code>{{.ID}}</code> {{.Name}}</td><td>{{.Category}}</td><td>{{if .Global}}account{{else}}per region{{end}}</td><td class="num">{{.Findings}}</td><td class="num">{{.Errors}}</td></tr>
+{{end}}</tbody>
+</table></div>
+{{if .Errors}}
+<h3 style="margin-top:20px">Regions and checks that errored</h3>
+<p class="note">These were not fully scanned; findings for them may be missing.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Region</th><th>Check</th><th>Error</th></tr></thead>
+<tbody>
+{{range .Errors}}<tr><td>{{.Region}}</td><td>{{if .CheckID}}<code>{{.CheckID}}</code>{{else}}(all checks){{end}}</td><td>{{.Message}}</td></tr>
+{{end}}</tbody>
+</table></div>
+{{else}}<p class="note">All checks completed without errors.</p>{{end}}
+
+<footer>Generated by cloudaudit {{.Version}} on {{date .GeneratedAt}} in {{printf "%.1f" .DurationSeconds}}s. Read-only: the scan used only Describe, Get and List API calls and changed nothing. Fix commands are suggestions to review; cloudaudit never runs them.</footer>
+</main>
+</body>
+</html>
+{{define "finding"}}<article class="finding" id="{{lower .Prefix}}{{.N}}">
+<header><span class="ref">{{.Prefix}}{{.N}}</span><span class="sev {{sevClass .F.Severity}}">{{.F.Severity}}</span><h3>{{.F.Title}}</h3>{{if eq .F.Category "cost"}}<span class="cost">{{usd .F.EstMonthlyUSD}}/mo <span class="fixnote">est.</span></span>{{end}}</header>
+<dl>
+  <dt>Resource</dt><dd><code>{{.F.ResourceID}}</code> · {{.F.Region}} · <code>{{.F.CheckID}}</code></dd>
+  <dt>Evidence</dt><dd>{{.F.Evidence}}</dd>
+  <dt>Recommendation</dt><dd>{{.F.Recommendation}}{{if .F.DocsURL}} <a href="{{.F.DocsURL}}">AWS docs</a>{{end}}</dd>
+  {{if .F.FixCommand}}<dt>Suggested fix</dt><dd><pre>{{.F.FixCommand}}</pre><span class="fixnote">Review before running. cloudaudit never runs it.</span></dd>{{end}}
+</dl>
+</article>
+{{end}}
