@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	awsclient "github.com/minhhieu21193/cloudaudit/internal/aws"
@@ -14,24 +13,22 @@ var profile string
 var scanCmd = &cobra.Command{
 	Use:   "scan",
 	Short: "Scan AWS account for cost waste",
-	Args:  cobra.ArbitraryArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Scanning AWS account...")
-		fmt.Printf("Your profile %s", profile)
-		initClient, err := awsclient.NewClient(profile)
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		fmt.Fprintf(cmd.ErrOrStderr(), "Scanning AWS account with profile %q...\n", profile)
+		client, err := awsclient.NewClient(profile)
 		if err != nil {
-			fmt.Printf("An error occur when init new client with profile %s, please check your aws profile and make sure your profile valid", profile)
+			return fmt.Errorf("init AWS client for profile %q: %w", profile, err)
 		}
-		ctx := context.Background()
 		checker := EBSOrphan.CheckOrphanedEBS{}
-		resultsCheck, err := checker.Run(ctx, initClient)
+		results, err := checker.Run(cmd.Context(), client)
 		if err != nil {
-			fmt.Printf("An error occur when check orphan EBS %s", &resultsCheck)
+			return fmt.Errorf("orphaned EBS check: %w", err)
 		}
-		for _, result := range resultsCheck {
-			fmt.Println(result)
+		for _, result := range results {
+			fmt.Fprintln(cmd.OutOrStdout(), result)
 		}
-
+		return nil
 	},
 }
 
