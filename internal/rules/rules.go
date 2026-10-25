@@ -16,6 +16,10 @@ import (
 func All() []checks.Check {
 	return []checks.Check{
 		EBSUnattached{},
+		EBSGP2ToGP3{},
+		EBSSnapshotOrphaned{},
+		EIPUnassociated{},
+		EC2Stopped{},
 	}
 }
 

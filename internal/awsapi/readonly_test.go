@@ -19,6 +19,7 @@ var allInterfaces = map[string]reflect.Type{
 	"DescribeVolumesAPI":             reflect.TypeFor[DescribeVolumesAPI](),
 	"DescribeAddressesAPI":           reflect.TypeFor[DescribeAddressesAPI](),
 	"DescribeSnapshotsAPI":           reflect.TypeFor[DescribeSnapshotsAPI](),
+	"DescribeImagesAPI":              reflect.TypeFor[DescribeImagesAPI](),
 	"DescribeInstancesAPI":           reflect.TypeFor[DescribeInstancesAPI](),
 	"DescribeNatGatewaysAPI":         reflect.TypeFor[DescribeNatGatewaysAPI](),
 	"DescribeSecurityGroupsAPI":      reflect.TypeFor[DescribeSecurityGroupsAPI](),

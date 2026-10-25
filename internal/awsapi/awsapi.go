@@ -35,6 +35,10 @@ type DescribeSnapshotsAPI interface {
 	DescribeSnapshots(context.Context, *ec2.DescribeSnapshotsInput, ...func(*ec2.Options)) (*ec2.DescribeSnapshotsOutput, error)
 }
 
+type DescribeImagesAPI interface {
+	DescribeImages(context.Context, *ec2.DescribeImagesInput, ...func(*ec2.Options)) (*ec2.DescribeImagesOutput, error)
+}
+
 type DescribeInstancesAPI interface {
 	DescribeInstances(context.Context, *ec2.DescribeInstancesInput, ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
 }
@@ -56,6 +60,7 @@ type EC2 interface {
 	DescribeVolumesAPI
 	DescribeAddressesAPI
 	DescribeSnapshotsAPI
+	DescribeImagesAPI
 	DescribeInstancesAPI
 	DescribeNatGatewaysAPI
 	DescribeSecurityGroupsAPI
