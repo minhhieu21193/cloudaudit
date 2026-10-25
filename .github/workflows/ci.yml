@@ -14,24 +14,24 @@ concurrency:
 
 jobs:
   test:
-    name: test (Go ${{ matrix.name }})
+    name: test (Go ${{ matrix.go }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: go.mod minimum
-            go-version-file: go.mod
-          - name: stable
-            go-version: stable
+        # The Go releases supported upstream. The first must match the go
+        # directive in go.mod (checked below).
+        go: ["1.26.x", "1.27.x"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: ${{ matrix.go-version }}
-          go-version-file: ${{ matrix.go-version-file }}
+          go-version: ${{ matrix.go }}
+      - name: go.mod targets the oldest tested Go
+        if: matrix.go == '1.26.x'
+        run: grep -qx 'go 1.26' go.mod
       - name: go vet
         run: go vet ./...
       - name: go test

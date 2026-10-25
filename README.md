@@ -51,7 +51,7 @@ cloudaudit is the tool behind a fixed-scope **AWS cost and security review**. Wi
 ## Quick start
 
 ```sh
-# Install (Go 1.24+), or download a binary from the Releases page
+# Install (Go 1.26+), or download a binary from the Releases page
 go install github.com/minhhieu21193/cloudaudit@latest
 
 # Try it with no AWS account at all
