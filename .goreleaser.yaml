@@ -28,7 +28,6 @@ archives:
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
-      - LICENSE*
       - docs/iam-policy.json
       - deploy/cloudformation/audit-role.yaml
 
