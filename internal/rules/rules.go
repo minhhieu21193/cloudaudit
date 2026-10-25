@@ -20,6 +20,8 @@ func All() []checks.Check {
 		EBSSnapshotOrphaned{},
 		EIPUnassociated{},
 		EC2Stopped{},
+		NATIdle{},
+		ELBIdle{},
 	}
 }
 
