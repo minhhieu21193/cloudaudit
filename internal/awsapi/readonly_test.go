@@ -48,6 +48,8 @@ var allInterfaces = map[string]reflect.Type{
 	"DescribeTrailsAPI":              reflect.TypeFor[DescribeTrailsAPI](),
 	"GetTrailStatusAPI":              reflect.TypeFor[GetTrailStatusAPI](),
 	"CloudTrail":                     reflect.TypeFor[CloudTrail](),
+	"GetCallerIdentityAPI":           reflect.TypeFor[GetCallerIdentityAPI](),
+	"STS":                            reflect.TypeFor[STS](),
 }
 
 var (

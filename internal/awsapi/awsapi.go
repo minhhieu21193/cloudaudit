@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3control"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 // EC2
@@ -180,6 +181,16 @@ type CloudTrail interface {
 	GetTrailStatusAPI
 }
 
+// STS
+
+type GetCallerIdentityAPI interface {
+	GetCallerIdentity(context.Context, *sts.GetCallerIdentityInput, ...func(*sts.Options)) (*sts.GetCallerIdentityOutput, error)
+}
+
+type STS interface {
+	GetCallerIdentityAPI
+}
+
 // Clients bundles the per-region service clients handed to each check.
 type Clients struct {
 	EC2        EC2
@@ -202,4 +213,5 @@ var (
 	_ IAM        = (*iam.Client)(nil)
 	_ RDS        = (*rds.Client)(nil)
 	_ CloudTrail = (*cloudtrail.Client)(nil)
+	_ STS        = (*sts.Client)(nil)
 )
