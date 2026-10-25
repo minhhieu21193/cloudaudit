@@ -64,6 +64,15 @@ func ec2Name(tags []ec2types.Tag) string {
 	return ""
 }
 
+// displayName prefers the Name tag in titles; the ID is always shown next
+// to the finding anyway.
+func displayName(id, name string) string {
+	if name == "" {
+		return id
+	}
+	return name
+}
+
 // withName renders "id (name)" when a Name tag exists.
 func withName(id, name string) string {
 	if name == "" {

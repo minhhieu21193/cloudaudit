@@ -163,3 +163,33 @@ func TestChecksCommandListsAll(t *testing.T) {
 		}
 	}
 }
+
+func TestScanDemoNeverCallsBackendFactory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "r.html")
+	var out, errOut bytes.Buffer
+	factory := func(context.Context, *scanOptions) (backend, error) {
+		t.Fatal("--demo must not build a real AWS backend")
+		return nil, nil
+	}
+	code := run(context.Background(), []string{"scan", "--demo", "--format", "html", "--out", path}, &out, &errOut, factory)
+	if code != ExitOK {
+		t.Fatalf("exit %d: %s", code, errOut.String())
+	}
+	html, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"<!doctype html>", "Demo report", "ap-northeast-1, ap-southeast-1", "123456789012"} {
+		if !strings.Contains(string(html), want) {
+			t.Errorf("demo HTML missing %q", want)
+		}
+	}
+}
+
+func TestScanDemoRejectsAWSFlags(t *testing.T) {
+	for _, flag := range []string{"--profile=prod", "--role-arn=arn:aws:iam::111122223333:role/x", "--external-id=x"} {
+		if code, _, _ := runWith(t, stubBackend{}, "scan", "--demo", flag); code != ExitError {
+			t.Errorf("--demo %s: exit %d, want 1", flag, code)
+		}
+	}
+}

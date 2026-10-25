@@ -95,7 +95,7 @@ func (c EBSSnapshotOrphaned) scan(ctx context.Context, api ebsSnapshotAPI, env *
 			}
 
 			f := meta.NewFinding(env, id)
-			f.Title = fmt.Sprintf("Snapshot %s is %d days old and its volume is gone", withName(id, ec2Name(s.Tags)), age)
+			f.Title = fmt.Sprintf("Snapshot %s is %d days old and its volume is gone", displayName(id, ec2Name(s.Tags)), age)
 			f.Severity = costSeverity(cost)
 			f.EstMonthlyUSD = cost
 			f.Evidence = fmt.Sprintf("Created %s from %s, which no longer exists. Not used by any AMI owned by this account. %s%s",

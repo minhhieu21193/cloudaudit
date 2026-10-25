@@ -49,7 +49,7 @@ func (c EBSUnattached) scan(ctx context.Context, api awsapi.DescribeVolumesAPI, 
 			cost := prices.EBSMonthly(volType, size)
 
 			f := meta.NewFinding(env, id)
-			f.Title = fmt.Sprintf("Unattached %s volume %s (%d GiB)", volType, withName(id, ec2Name(v.Tags)), size)
+			f.Title = fmt.Sprintf("Unattached %s volume %s (%d GiB)", volType, displayName(id, ec2Name(v.Tags)), size)
 			f.Severity = costSeverity(cost)
 			f.EstMonthlyUSD = cost
 			f.Evidence = fmt.Sprintf("State is available (attached to nothing). Created %s, %d days ago. %d GiB %s at $%.3f/GB-month (storage only).%s",

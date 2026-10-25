@@ -65,7 +65,7 @@ func (c EC2Stopped) scan(ctx context.Context, api ec2StoppedAPI, env *checks.Env
 			}
 		}
 		f := meta.NewFinding(env, s.id)
-		f.Title = fmt.Sprintf("Instance %s stopped for %d days", withName(s.id, s.name), s.days)
+		f.Title = fmt.Sprintf("Instance %s stopped for %d days", displayName(s.id, s.name), s.days)
 		f.Severity = costSeverity(cost)
 		f.EstMonthlyUSD = cost
 		f.Evidence = fmt.Sprintf("%s stopped since %s (%d days, threshold %d). %d attached EBS volume(s), %d GiB in total, still billed.%s",

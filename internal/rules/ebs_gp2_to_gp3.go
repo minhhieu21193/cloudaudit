@@ -82,7 +82,7 @@ func (c EBSGP2ToGP3) scan(ctx context.Context, api ebsGP2API, env *checks.Env) (
 			}
 
 			f := meta.NewFinding(env, id)
-			f.Title = fmt.Sprintf("gp2 volume %s (%d GiB) can move to gp3", withName(id, ec2Name(v.Tags)), size)
+			f.Title = fmt.Sprintf("gp2 volume %s (%d GiB) can move to gp3", displayName(id, ec2Name(v.Tags)), size)
 			f.Severity = costSeverity(savings)
 			f.EstMonthlyUSD = savings
 			f.Evidence = fmt.Sprintf("In use by %s. gp2 $%.3f vs gp3 $%.3f per GB-month.%s",

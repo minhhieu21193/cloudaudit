@@ -138,7 +138,7 @@ func TestMarkdown(t *testing.T) {
 	out := render(t, FormatMarkdown, Build(res, metas, Options{Version: "v1.2.3"}))
 	for _, want := range []string{
 		"**Estimated monthly waste: $1,284.56**",
-		"| C1 | HIGH | $1,234.50 | ap-southeast-1 |",
+		"| [C1](#c1) | HIGH | $1,234.50 | ap-southeast-1 | big |",
 		`root <b>mfa</b> \| pipe`,
 		"```sh\naws ec2 delete-nat-gateway --nat-gateway-id nat-1\n```",
 		"| ap-southeast-1 | `nat-idle` | AccessDenied: cloudwatch:GetMetricStatistics |",

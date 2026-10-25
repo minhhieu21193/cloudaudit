@@ -107,6 +107,9 @@ func (SGOpenAdminPorts) evaluate(meta checks.Meta, env *checks.Env, sg ec2types.
 			continue
 		}
 		rule := fmt.Sprintf("tcp %d-%d", aws.ToInt32(perm.FromPort), aws.ToInt32(perm.ToPort))
+		if aws.ToInt32(perm.FromPort) == aws.ToInt32(perm.ToPort) {
+			rule = fmt.Sprintf("tcp %d", aws.ToInt32(perm.FromPort))
+		}
 		if allTraffic {
 			rule = "all traffic"
 			severity = checks.SeverityCritical
@@ -122,7 +125,7 @@ func (SGOpenAdminPorts) evaluate(meta checks.Meta, env *checks.Env, sg ec2types.
 	sort.Strings(exposed)
 
 	f := meta.NewFinding(env, id)
-	f.Title = fmt.Sprintf("Security group %s is open to the internet on admin/DB ports", withName(id, aws.ToString(sg.GroupName)))
+	f.Title = fmt.Sprintf("Security group %s is open to the internet on admin/DB ports", displayName(id, aws.ToString(sg.GroupName)))
 	f.Severity = severity
 	f.Evidence = fmt.Sprintf("VPC %s. Inbound rules: %s.", aws.ToString(sg.VpcId), strings.Join(exposed, "; "))
 	f.Recommendation = "Remove the 0.0.0.0/0 and ::/0 rules. Reach instances through SSM Session Manager or a VPN, and allow databases only from application security groups."

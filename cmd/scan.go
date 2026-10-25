@@ -9,8 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/minhhieu21193/cloudaudit/internal/checks"
+	"github.com/minhhieu21193/cloudaudit/internal/demo"
 	"github.com/minhhieu21193/cloudaudit/internal/rules"
 	"github.com/minhhieu21193/cloudaudit/internal/scan"
 	"github.com/minhhieu21193/cloudaudit/pkg/report"
@@ -31,6 +33,7 @@ type scanOptions struct {
 	concurrency     int
 	snapshotAgeDays int
 	stoppedDays     int
+	demo            bool
 }
 
 func newScanCmd(newBackend backendFactory) *cobra.Command {
@@ -43,7 +46,8 @@ and writes a report. Only read-only Describe/Get/List API calls are made.
 
 Exit codes: 0 no findings at or above --fail-on, 2 findings at or above
 --fail-on, 1 error (including a partial scan; the report is still written).`,
-		Example: `  cloudaudit scan --profile client-audit --regions ap-northeast-1,ap-southeast-1 --format html --out report.html
+		Example: `  cloudaudit scan --demo --format html --out report.html
+  cloudaudit scan --profile client-audit --regions ap-northeast-1,ap-southeast-1 --format html --out report.html
   cloudaudit scan --role-arn arn:aws:iam::111122223333:role/CloudAuditReadOnly --external-id <id> --all-regions
   cloudaudit scan --checks sg-open-admin-ports,root-account --fail-on HIGH --format json`,
 		Args: cobra.NoArgs,
@@ -65,7 +69,11 @@ Exit codes: 0 no findings at or above --fail-on, 2 findings at or above
 	f.IntVar(&o.concurrency, "concurrency", 4, "regions scanned in parallel")
 	f.IntVar(&o.snapshotAgeDays, "snapshot-age-days", checks.DefaultConfig().SnapshotMinAgeDays, "minimum age for ebs-snapshot-orphaned")
 	f.IntVar(&o.stoppedDays, "stopped-days", checks.DefaultConfig().StoppedMinDays, "minimum days stopped for ec2-stopped")
+	f.BoolVar(&o.demo, "demo", false, "scan a built-in fictional account instead of AWS (no credentials needed)")
 	c.MarkFlagsMutuallyExclusive("regions", "all-regions")
+	for _, awsFlag := range []string{"profile", "role-arn", "external-id"} {
+		c.MarkFlagsMutuallyExclusive("demo", awsFlag)
+	}
 	return c
 }
 
@@ -95,8 +103,11 @@ func runScan(ctx context.Context, o *scanOptions, newBackend backendFactory, std
 	cfg.SnapshotMinAgeDays = o.snapshotAgeDays
 	cfg.StoppedMinDays = o.stoppedDays
 
-	b, err := newBackend(ctx, o)
-	if err != nil {
+	var b backend
+	if o.demo {
+		// Never touches AWS: no config is loaded and no client is created.
+		b = demo.New(time.Now())
+	} else if b, err = newBackend(ctx, o); err != nil {
 		return err
 	}
 	accountID, err := b.AccountID(ctx)
@@ -154,7 +165,7 @@ func runScan(ctx context.Context, o *scanOptions, newBackend backendFactory, std
 }
 
 func resolveRegions(ctx context.Context, o *scanOptions, b backend) ([]string, error) {
-	if o.allRegions {
+	if o.allRegions || (isDemo(b) && len(o.regions) == 0) {
 		return b.EnabledRegions(ctx)
 	}
 	var regions []string

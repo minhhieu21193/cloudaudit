@@ -62,7 +62,7 @@ func (c NATIdle) scan(ctx context.Context, api awsapi.DescribeNatGatewaysAPI, cw
 				continue
 			}
 			f := meta.NewFinding(env, id)
-			f.Title = fmt.Sprintf("NAT Gateway %s sent %s in %d days", withName(id, ec2Name(n.Tags)), humanBytes(sent), lookback)
+			f.Title = fmt.Sprintf("NAT Gateway %s sent %s in %d days", displayName(id, ec2Name(n.Tags)), humanBytes(sent), lookback)
 			f.Severity = costSeverity(cost)
 			f.EstMonthlyUSD = cost
 			f.Evidence = fmt.Sprintf("BytesOutToDestination over the last %d days: %s (idle threshold %s). VPC %s, subnet %s. Billed $%.3f/hour plus data processing.%s",
