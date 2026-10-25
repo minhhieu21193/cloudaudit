@@ -44,6 +44,7 @@ cloudaudit is the tool behind a fixed-scope **AWS cost and security review**. Wi
 
 - Every AWS call goes through the interfaces in [`internal/awsapi`](internal/awsapi/awsapi.go), which expose only `Describe*`, `Get*` and `List*` operations. The checks never see a full SDK client.
 - [`TestInterfacesAreReadOnly`](internal/awsapi/readonly_test.go) reflects over every interface in that package and fails the build if any method name starts with `Create`, `Delete`, `Modify`, `Put`, `Update`, `Attach`, `Detach`, `Generate`, `Start`, `Stop` or `Terminate`. A companion test parses the package source, so a newly added interface cannot skip the check.
+- [`TestNoSDKClientsOutsideAWSClient`](internal/awsapi/sdkusage_test.go) closes the way around those interfaces. It parses every non-test Go file outside `internal/awsclient` and `internal/awsapi`, and fails if one builds an SDK client (`NewFromConfig`/`New`), type-asserts a value back to a full client such as `.(*ec2.Client)`, or declares an interface with a mutating method, which would allow `x.(interface{ DeleteVolume(...) })`.
 - [`TestIAMPolicyMatchesCode`](internal/awsapi/policy_test.go) derives the IAM actions from those interfaces and fails if the published policy or the CloudFormation role grants anything extra, uses a wildcard, or misses a call.
 - IAM checks use per-user `List`/`Get` calls rather than `GenerateCredentialReport`, which would create a report object in your account.
 - Fix commands are printed, never executed.
