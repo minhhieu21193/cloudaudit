@@ -22,6 +22,10 @@ func All() []checks.Check {
 		EC2Stopped{},
 		NATIdle{},
 		ELBIdle{},
+		SGOpenAdminPorts{},
+		EBSEncryptionDefault{},
+		RDSUnencrypted{},
+		RDSPublic{},
 	}
 }
 
